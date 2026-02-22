@@ -72,11 +72,8 @@ export default function PortfolioCalculator() {
     const years = data.length;
     const cagr = (Math.pow(currentBalance / 100, 1 / years) - 1) * 100;
     const dividendYield = (qqqWeight / 100) * 0.6 + (schdWeight / 100) * 3.4;
-
-    // 100% QQQ 기준 MDD (-32.58%)와 비교
     const mddImprovement = (Math.abs(-32.58) - Math.abs(maxDrawdown * 100)).toFixed(1);
 
-    // 성향 진단 로직
     let profile = { title: "", icon: "⚖️", desc: "", color: "#4E5968" };
     if (qqqWeight >= 80) {
       profile = { title: "초공격적 성장형", icon: "🚀", desc: "자산 폭발! 하락장 멘탈이 강한 젊은 투자자에게 추천해요.", color: "#3182F6" };
@@ -98,12 +95,12 @@ export default function PortfolioCalculator() {
         {/* Header */}
         <header className="space-y-2 py-4 text-center">
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-            <span className="inline-block px-3 py-1 bg-[#3182F61A] text-[#3182F6] text-xs font-bold rounded-full mb-2">Portfolio Guide</span>
-            <h1 className="text-3xl font-bold tracking-tight">황금 비율 찾기</h1>
+            <span className="inline-block px-3 py-1 bg-[#3182F61A] text-[#3182F6] text-xs font-bold rounded-full mb-2">QQQ vs SCHD Calculator</span>
+            <h1 className="text-3xl font-bold tracking-tight">투자 비중 계산기</h1>
           </motion.div>
         </header>
 
-        {/* Dynamic Insight Card (Toss Style Focus) */}
+        {/* Dynamic Insight Card */}
         <section className="bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#F2F4F6]">
           <div className="flex items-start gap-4 mb-6">
             <span className="text-4xl">{results.profile.icon}</span>
@@ -112,7 +109,6 @@ export default function PortfolioCalculator() {
               <p className="text-[#4E5968] text-sm leading-relaxed">{results.profile.desc}</p>
             </div>
           </div>
-          
           <div className="pt-4 border-t border-[#F2F4F6] flex items-center justify-between text-sm">
             <span className="text-[#8B95A1]">시장 대비 장점</span>
             <span className="font-bold text-[#3182F6]">
@@ -123,138 +119,77 @@ export default function PortfolioCalculator() {
           </div>
         </section>
 
-        {/* Controls - Presets & Slider */}
+        {/* Controls */}
         <section className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6] space-y-10">
-          <div className="flex gap-2 mb-2">
-            {[
-              { label: "공격 8:2", val: 80 },
-              { label: "밸런스 5:5", val: 50 },
-              { label: "안정 2:8", val: 20 }
-            ].map((btn) => (
-              <button 
-                key={btn.val}
-                onClick={() => setQqqWeight(btn.val)}
-                className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${qqqWeight === btn.val ? 'bg-[#3182F6] text-white shadow-md' : 'bg-[#F2F4F6] text-[#4E5968] hover:bg-[#E5E8EB]'}`}
-              >
+          <div className="flex gap-2">
+            {[ { label: "공격 8:2", val: 80 }, { label: "밸런스 5:5", val: 50 }, { label: "안정 2:8", val: 20 } ].map((btn) => (
+              <button key={btn.val} onClick={() => setQqqWeight(btn.val)} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${qqqWeight === btn.val ? 'bg-[#3182F6] text-white' : 'bg-[#F2F4F6] text-[#4E5968]'}`}>
                 {btn.label}
               </button>
             ))}
           </div>
-
-          <div className="space-y-6">
-            <div className="flex justify-between items-end">
-              <div className="space-y-1">
-                <span className="text-[#8B95A1] text-[10px] font-bold uppercase">Tech Growth</span>
-                <p className="text-3xl font-black text-[#3182F6]">QQQ {qqqWeight}%</p>
-              </div>
-              <div className="space-y-1 text-right">
-                <span className="text-[#8B95A1] text-[10px] font-bold uppercase">Dividend Plus</span>
-                <p className="text-3xl font-black text-[#4E5968]">SCHD {schdWeight}%</p>
-              </div>
-            </div>
-
-            <div className="relative py-4">
-              {/* Highlight Safety Zone */}
-              <div className="absolute top-1/2 left-[50%] right-[20%] h-3 bg-[#3182F622] -translate-y-1/2 rounded-full pointer-events-none" />
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={qqqWeight}
-                onChange={(e) => setQqqWeight(parseInt(e.target.value))}
-                className="w-full h-3 bg-[#E5E8EB] rounded-full appearance-none cursor-pointer accent-[#3182F6] relative z-10"
-              />
-              <div className="flex justify-between mt-4 text-[10px] font-bold text-[#ADB5BD]">
-                <span>배당 극대화</span>
-                <span className="text-[#3182F6]">추천 구간 (60~80%)</span>
-                <span>성장 극대화</span>
-              </div>
+          <div className="relative py-4">
+            <div className="absolute top-1/2 left-[50%] right-[20%] h-3 bg-[#3182F622] -translate-y-1/2 rounded-full pointer-events-none" />
+            <input type="range" min="0" max="100" step="5" value={qqqWeight} onChange={(e) => setQqqWeight(parseInt(e.target.value))} className="w-full h-3 bg-[#E5E8EB] rounded-full appearance-none cursor-pointer accent-[#3182F6] relative z-10" />
+            <div className="flex justify-between mt-4 text-[10px] font-bold text-[#ADB5BD]">
+              <span>SCHD 집중형</span><span className="text-[#3182F6]">황금비율 구간 (6:4 ~ 8:2)</span><span>QQQ 집중형</span>
             </div>
           </div>
         </section>
 
         {/* Metrics Grid */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center space-y-1">
-            <span className="text-xs font-bold text-[#8B95A1]">연평균 수익률</span>
-            <div className="text-2xl font-black text-[#3182F6] tracking-tight">
-              <AnimatedNumber value={results.cagr} suffix="%" />
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center space-y-1">
-            <span className="text-xs font-bold text-[#8B95A1]">최대 하락폭</span>
-            <div className="text-2xl font-black text-[#FF4D4F] tracking-tight">
-              <AnimatedNumber value={results.mdd} suffix="%" />
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center space-y-1">
-            <span className="text-xs font-bold text-[#8B95A1]">예상 배당률</span>
-            <div className="text-2xl font-black text-[#00D084] tracking-tight">
-              <AnimatedNumber value={results.dividendYield} suffix="%" />
-            </div>
-          </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center"><span className="text-xs font-bold text-[#8B95A1]">CAGR</span><div className="text-2xl font-black text-[#3182F6]"><AnimatedNumber value={results.cagr} suffix="%" /></div></div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center"><span className="text-xs font-bold text-[#8B95A1]">MDD</span><div className="text-2xl font-black text-[#FF4D4F]"><AnimatedNumber value={results.mdd} suffix="%" /></div></div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center"><span className="text-xs font-bold text-[#8B95A1]">DIVIDEND</span><div className="text-2xl font-black text-[#00D084]"><AnimatedNumber value={results.dividendYield} suffix="%" /></div></div>
         </section>
 
         {/* AdSense Placeholder */}
-        <div className="w-full max-w-[640px] h-[100px] mx-auto bg-[#F2F4F6] border border-dashed border-[#E5E8EB] rounded-3xl flex items-center justify-center text-[#B0B8C1] text-[10px] font-bold">
-          ADVERTISEMENT (640x100)
-        </div>
+        <div className="w-full max-w-[640px] h-[100px] mx-auto bg-[#F2F4F6] border border-dashed border-[#E5E8EB] rounded-3xl flex items-center justify-center text-[#B0B8C1] text-[10px] font-bold">ADVERTISEMENT</div>
 
-        {/* Chart */}
-        <section className="bg-white p-8 rounded-[40px] shadow-sm border border-[#F2F4F6]">
-          <h3 className="text-lg font-bold mb-8">내 자산의 성장 궤적</h3>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={results.chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3182F6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#3182F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="0" vertical={false} stroke="#F2F4F6" />
-                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#ADB5BD', fontSize: 11 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#ADB5BD', fontSize: 11 }} />
-                <Tooltip 
-                  cursor={{ stroke: '#3182F6', strokeWidth: 1.5 }}
-                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 15px 30px rgba(0,0,0,0.08)', padding: '16px' }}
-                />
-                <Area type="monotone" dataKey="value" stroke="#3182F6" strokeWidth={5} fill="url(#colorValue)" animationDuration={1000} />
-              </AreaChart>
-            </ResponsiveContainer>
+        {/* SEO Blog Content Section (New) */}
+        <section className="bg-white p-8 md:p-12 rounded-[40px] shadow-sm border border-[#F2F4F6] space-y-8">
+          <h2 className="text-2xl font-bold">왜 QQQ와 SCHD를 함께 투자해야 할까요?</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-[#3182F6]">📈 QQQ의 강력한 성장성</h3>
+              <p className="text-sm text-[#4E5968] leading-relaxed">
+                나스닥100(QQQ)은 Apple, Microsoft, NVIDIA 등 기술 혁신을 주도하는 기업들에 집중합니다. 높은 자본 차익을 기대할 수 있지만, 시장 변동성에는 다소 취약한 모습을 보입니다.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-[#00D084]">☕ SCHD의 탄탄한 안정성</h3>
+              <p className="text-sm text-[#4E5968] leading-relaxed">
+                배당성장(SCHD)은 꾸준히 배당을 늘리는 가치주에 투자합니다. 상승장에서는 QQQ보다 속도가 느릴 수 있지만, 하락장에서의 방어력이 뛰어나고 매월 현금 흐름을 만들어줍니다.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-[#F9FAFB] p-6 rounded-[24px]">
+            <h3 className="text-md font-bold mb-3 italic">"하락장을 견디는 힘이 수익을 만듭니다."</h3>
+            <p className="text-sm text-[#4E5968] leading-relaxed">
+              두 ETF를 적절히 섞으면 기술주의 **폭발적인 수익**과 가치주의 **안정적인 배당**을 동시에 챙길 수 있습니다. 특히 2022년과 같은 하락장에서 MDD(최대 하락폭)를 획기적으로 낮추는 포트폴리오 다각화 효과를 얻을 수 있습니다.
+            </p>
           </div>
         </section>
 
-        {/* Holdings Comparison (New) */}
+        {/* Holdings Comparison */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
           <div className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6]">
-            <h4 className="font-bold text-[#3182F6] mb-6 flex items-center gap-2">
-              <span className="w-2 h-2 bg-[#3182F6] rounded-full" /> QQQ Top 10
-            </h4>
+            <h4 className="font-bold text-[#3182F6] mb-6 flex items-center gap-2">QQQ Top 10</h4>
             <ul className="space-y-4">
-              {qqqHoldings.map((h, i) => (
-                <li key={h} className="flex items-center justify-between text-sm">
-                  <span className="text-[#8B95A1] font-bold">{i+1}</span>
-                  <span className="font-medium text-[#4E5968] flex-1 ml-4">{h}</span>
-                </li>
-              ))}
+              {qqqHoldings.map((h, i) => (<li key={h} className="flex justify-between text-sm"><span className="text-[#8B95A1] font-bold">{i+1}</span><span className="font-medium text-[#4E5968]">{h}</span></li>))}
             </ul>
           </div>
           <div className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6]">
-            <h4 className="font-bold text-[#4E5968] mb-6 flex items-center gap-2">
-              <span className="w-2 h-2 bg-[#4E5968] rounded-full" /> SCHD Top 10
-            </h4>
+            <h4 className="font-bold text-[#4E5968] mb-6 flex items-center gap-2">SCHD Top 10</h4>
             <ul className="space-y-4">
-              {schdHoldings.map((h, i) => (
-                <li key={h} className="flex items-center justify-between text-sm">
-                  <span className="text-[#8B95A1] font-bold">{i+1}</span>
-                  <span className="font-medium text-[#4E5968] flex-1 ml-4">{h}</span>
-                </li>
-              ))}
+              {schdHoldings.map((h, i) => (<li key={h} className="flex justify-between text-sm"><span className="text-[#8B95A1] font-bold">{i+1}</span><span className="font-medium text-[#4E5968]">{h}</span></li>))}
             </ul>
           </div>
         </section>
+
       </div>
 
       <style jsx global>{`
