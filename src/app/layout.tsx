@@ -26,9 +26,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Read occupation<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="ko">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
