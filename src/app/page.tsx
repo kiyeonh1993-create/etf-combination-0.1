@@ -28,16 +28,33 @@ const data = [
 ];
 
 const qqqHoldings = [
-  "Apple", "Microsoft", "Amazon", "NVIDIA", "Alphabet Cl A", 
-  "Meta", "Broadcom", "Tesla", "Costco", "Alphabet Cl C"
+  { name: "Apple", weight: 12.4, symbol: "AAPL" },
+  { name: "Microsoft", weight: 9.8, symbol: "MSFT" },
+  { name: "Amazon", weight: 4.7, symbol: "AMZN" },
+  { name: "NVIDIA", weight: 4.5, symbol: "NVDA" },
+  { name: "Alphabet Cl A", weight: 3.8, symbol: "GOOGL" },
+  { name: "Meta", weight: 3.5, symbol: "META" },
+  { name: "Broadcom", weight: 3.2, symbol: "AVGO" },
+  { name: "Tesla", weight: 2.8, symbol: "TSLA" },
+  { name: "Costco", weight: 2.1, symbol: "COST" },
+  { name: "Alphabet Cl C", weight: 2.0, symbol: "GOOG" }
 ];
 
 const schdHoldings = [
-  "AbbVie", "Home Depot", "Chevron", "Amgen", "Verizon", 
-  "PepsiCo", "Pfizer", "Cisco", "Coca-Cola", "Texas Instruments"
+  { name: "AbbVie", weight: 4.4, symbol: "ABBV" },
+  { name: "Home Depot", weight: 4.2, symbol: "HD" },
+  { name: "Chevron", weight: 4.1, symbol: "CVX" },
+  { name: "Amgen", weight: 4.0, symbol: "AMGN" },
+  { name: "Verizon", weight: 3.9, symbol: "VZ" },
+  { name: "PepsiCo", weight: 3.8, symbol: "PEP" },
+  { name: "Pfizer", weight: 3.7, symbol: "PFE" },
+  { name: "Cisco", weight: 3.6, symbol: "CSCO" },
+  { name: "Coca-Cola", weight: 3.5, symbol: "KO" },
+  { name: "Texas Instruments", weight: 3.4, symbol: "TXN" }
 ];
 
-const AnimatedNumber = ({ value, suffix = "" }: { value: string | number, suffix?: string }) => {
+const AnimatedNumber = ({ value, suffix = "", isCurrency = false }: { value: string | number, suffix?: string, isCurrency?: boolean }) => {
+  const displayValue = isCurrency ? new Intl.NumberFormat('ko-KR').format(Number(value)) : value;
   return (
     <motion.span
       key={value}
@@ -45,20 +62,21 @@ const AnimatedNumber = ({ value, suffix = "" }: { value: string | number, suffix
       animate={{ opacity: 1, y: 0 }}
       className="inline-block"
     >
-      {value}{suffix}
+      {isCurrency ? "₩" : ""}{displayValue}{suffix}
     </motion.span>
   );
 };
 
 export default function PortfolioCalculator() {
+  const [initialInvestment, setInitialInvestment] = useState(10000000); // 기본 1,000만 원
   const [qqqWeight, setQqqWeight] = useState(70);
   const schdWeight = 100 - qqqWeight;
 
   const results = useMemo(() => {
-    let currentBalance = 100;
-    let peakBalance = 100;
+    let currentBalance = initialInvestment;
+    let peakBalance = initialInvestment;
     let maxDrawdown = 0;
-    const chartData = [{ year: 2013, value: 100 }];
+    const chartData = [{ year: 2013, value: initialInvestment }];
 
     data.forEach((item) => {
       const yearlyReturn = (qqqWeight / 100) * (item.qqq / 100) + (schdWeight / 100) * (item.schd / 100);
@@ -66,130 +84,155 @@ export default function PortfolioCalculator() {
       if (currentBalance > peakBalance) peakBalance = currentBalance;
       const drawdown = (currentBalance - peakBalance) / peakBalance;
       if (drawdown < maxDrawdown) maxDrawdown = drawdown;
-      chartData.push({ year: item.year, value: Math.round(currentBalance * 10) / 10 });
+      chartData.push({ year: item.year, value: Math.round(currentBalance) });
     });
 
     const years = data.length;
-    const cagr = (Math.pow(currentBalance / 100, 1 / years) - 1) * 100;
+    const cagr = (Math.pow(currentBalance / initialInvestment, 1 / years) - 1) * 100;
     const dividendYield = (qqqWeight / 100) * 0.6 + (schdWeight / 100) * 3.4;
-    const mddImprovement = (Math.abs(-32.58) - Math.abs(maxDrawdown * 100)).toFixed(1);
+    
+    // 월 예상 배당금 (연간 배당 / 12)
+    const monthlyDividend = (currentBalance * (dividendYield / 100)) / 12;
 
     let profile = { title: "", icon: "⚖️", desc: "", color: "#4E5968" };
-    if (qqqWeight >= 80) {
-      profile = { title: "초공격적 성장형", icon: "🚀", desc: "자산 폭발! 하락장 멘탈이 강한 젊은 투자자에게 추천해요.", color: "#3182F6" };
-    } else if (qqqWeight >= 60) {
-      profile = { title: "공격적 밸런스형", icon: "📈", desc: "시장을 이기면서도 하락장 방어력을 챙긴 가장 영리한 비율이에요.", color: "#3182F6" };
-    } else if (qqqWeight >= 40) {
-      profile = { title: "중립적 밸런스형", icon: "⚖️", desc: "수익과 배당, 두 마리 토끼를 잡고 싶은 분들의 황금 비율입니다.", color: "#4E5968" };
-    } else {
-      profile = { title: "안정적 배당형", icon: "☕", desc: "잠 편하게 자고 싶은 배당러! 하락장에서도 마음이 편안해요.", color: "#00D084" };
-    }
+    if (qqqWeight >= 80) profile = { title: "초공격적 성장형", icon: "🚀", desc: "자산 폭발! 하락장 멘탈이 강한 투자자에게 추천해요.", color: "#3182F6" };
+    else if (qqqWeight >= 60) profile = { title: "공격적 밸런스형", icon: "📈", desc: "수익률을 높이면서 배당 안전핀을 적절히 섞었어요.", color: "#3182F6" };
+    else if (qqqWeight >= 40) profile = { title: "중립적 밸런스형", icon: "⚖️", desc: "수익과 배당, 두 마리 토끼를 잡는 가장 대중적인 비율이에요.", color: "#4E5968" };
+    else profile = { title: "안정적 배당형", icon: "☕", desc: "자산의 변동성을 줄이고 매달 들어오는 현금을 즐겨보세요.", color: "#00D084" };
 
-    return { chartData, cagr: cagr.toFixed(2), mdd: (maxDrawdown * 100).toFixed(2), dividendYield: dividendYield.toFixed(2), profile, mddImprovement };
-  }, [qqqWeight, schdWeight]);
+    return { chartData, cagr: cagr.toFixed(2), mdd: (maxDrawdown * 100).toFixed(2), dividendYield: dividendYield.toFixed(2), monthlyDividend: Math.round(monthlyDividend), finalValue: Math.round(currentBalance), profile };
+  }, [qqqWeight, schdWeight, initialInvestment]);
 
   return (
     <main className="min-h-screen bg-[#F9FAFB] p-4 md:p-10 font-sans text-[#191F28]">
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* Header */}
-        <header className="space-y-2 py-4 text-center">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-            <span className="inline-block px-3 py-1 bg-[#3182F61A] text-[#3182F6] text-xs font-bold rounded-full mb-2">QQQ vs SCHD Calculator</span>
-            <h1 className="text-3xl font-bold tracking-tight">투자 비중 계산기</h1>
+        <header className="space-y-4 py-4 text-center">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <span className="inline-block px-3 py-1 bg-[#3182F61A] text-[#3182F6] text-[10px] font-bold rounded-full mb-2 uppercase tracking-widest">Investment Simulator</span>
+            <h1 className="text-3xl font-bold tracking-tight mb-6">나의 투자 미래 확인하기</h1>
           </motion.div>
+
+          {/* Money Input Section */}
+          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-[#F2F4F6] max-w-sm mx-auto">
+            <label className="text-xs font-bold text-[#8B95A1] block mb-2">초기 투자 원금</label>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xl font-bold text-[#191F28]">₩</span>
+              <input 
+                type="number" 
+                value={initialInvestment}
+                onChange={(e) => setInitialInvestment(Number(e.target.value))}
+                className="text-2xl font-black text-[#3182F6] w-full text-center outline-none border-b-2 border-[#F2F4F6] focus:border-[#3182F6] transition-colors"
+              />
+            </div>
+            <p className="text-[10px] text-[#B0B8C1] mt-3">숫자를 클릭해 투자금을 변경해보세요</p>
+          </div>
         </header>
 
-        {/* Dynamic Insight Card */}
-        <section className="bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#F2F4F6]">
-          <div className="flex items-start gap-4 mb-6">
-            <span className="text-4xl">{results.profile.icon}</span>
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold" style={{ color: results.profile.color }}>{results.profile.title}</h2>
-              <p className="text-[#4E5968] text-sm leading-relaxed">{results.profile.desc}</p>
-            </div>
+        {/* Results Card - The "Money" Focus */}
+        <section className="bg-white p-8 rounded-[40px] shadow-[0_20px_40px_rgba(0,0,0,0.04)] border border-[#F2F4F6] relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <span className="text-9xl">{results.profile.icon}</span>
           </div>
-          <div className="pt-4 border-t border-[#F2F4F6] flex items-center justify-between text-sm">
-            <span className="text-[#8B95A1]">시장 대비 장점</span>
-            <span className="font-bold text-[#3182F6]">
-              {parseFloat(results.mddImprovement) > 0 
-                ? `100% QQQ보다 하락폭을 ${results.mddImprovement}% 줄였어요!` 
-                : "최고의 공격력을 가진 구성이에요!"}
-            </span>
+          
+          <div className="relative z-10 space-y-8">
+            <div className="space-y-1">
+              <h2 className="text-sm font-bold text-[#8B95A1]">12년 뒤 내 예상 자산</h2>
+              <p className="text-4xl font-black text-[#191F28]">
+                <AnimatedNumber value={results.finalValue} isCurrency={true} />
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-[#F9FAFB] p-5 rounded-3xl">
+                <span className="text-[10px] font-bold text-[#8B95A1] block mb-1">매달 받는 배당금</span>
+                <p className="text-xl font-bold text-[#00D084]">
+                  <AnimatedNumber value={results.monthlyDividend} isCurrency={true} />
+                </p>
+              </div>
+              <div className="bg-[#F9FAFB] p-5 rounded-3xl">
+                <span className="text-[10px] font-bold text-[#8B95A1] block mb-1">연평균 수익률</span>
+                <p className="text-xl font-bold text-[#3182F6]">
+                  <AnimatedNumber value={results.cagr} suffix="%" />
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-[#F2F4F6]">
+              <h3 className="text-lg font-bold" style={{ color: results.profile.color }}>{results.profile.icon} {results.profile.title}</h3>
+              <p className="text-[#4E5968] text-sm leading-relaxed mt-1">{results.profile.desc}</p>
+            </div>
           </div>
         </section>
 
         {/* Controls */}
-        <section className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6] space-y-10">
+        <section className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6] space-y-8">
           <div className="flex gap-2">
             {[ { label: "공격 8:2", val: 80 }, { label: "밸런스 5:5", val: 50 }, { label: "안정 2:8", val: 20 } ].map((btn) => (
-              <button key={btn.val} onClick={() => setQqqWeight(btn.val)} className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${qqqWeight === btn.val ? 'bg-[#3182F6] text-white' : 'bg-[#F2F4F6] text-[#4E5968]'}`}>
+              <button key={btn.val} onClick={() => setQqqWeight(btn.val)} className={`flex-1 py-3 text-xs font-bold rounded-2xl transition-all ${qqqWeight === btn.val ? 'bg-[#3182F6] text-white shadow-lg shadow-[#3182F644]' : 'bg-[#F2F4F6] text-[#4E5968]'}`}>
                 {btn.label}
               </button>
             ))}
           </div>
           <div className="relative py-4">
-            <div className="absolute top-1/2 left-[50%] right-[20%] h-3 bg-[#3182F622] -translate-y-1/2 rounded-full pointer-events-none" />
-            <input type="range" min="0" max="100" step="5" value={qqqWeight} onChange={(e) => setQqqWeight(parseInt(e.target.value))} className="w-full h-3 bg-[#E5E8EB] rounded-full appearance-none cursor-pointer accent-[#3182F6] relative z-10" />
-            <div className="flex justify-between mt-4 text-[10px] font-bold text-[#ADB5BD]">
-              <span>SCHD 집중형</span><span className="text-[#3182F6]">황금비율 구간 (6:4 ~ 8:2)</span><span>QQQ 집중형</span>
+            <input type="range" min="0" max="100" step="5" value={qqqWeight} onChange={(e) => setQqqWeight(parseInt(e.target.value))} className="w-full h-3 bg-[#E5E8EB] rounded-full appearance-none cursor-pointer accent-[#3182F6]" />
+            <div className="flex justify-between mt-4 text-[10px] font-black uppercase text-[#ADB5BD] tracking-tighter">
+              <span>More Dividend</span><span className="text-[#3182F6]">Golden Zone</span><span>More Growth</span>
             </div>
           </div>
         </section>
 
-        {/* Metrics Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center"><span className="text-xs font-bold text-[#8B95A1]">CAGR</span><div className="text-2xl font-black text-[#3182F6]"><AnimatedNumber value={results.cagr} suffix="%" /></div></div>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center"><span className="text-xs font-bold text-[#8B95A1]">MDD</span><div className="text-2xl font-black text-[#FF4D4F]"><AnimatedNumber value={results.mdd} suffix="%" /></div></div>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center"><span className="text-xs font-bold text-[#8B95A1]">DIVIDEND</span><div className="text-2xl font-black text-[#00D084]"><AnimatedNumber value={results.dividendYield} suffix="%" /></div></div>
-        </section>
-
-        {/* AdSense Placeholder */}
-        <div className="w-full max-w-[640px] h-[100px] mx-auto bg-[#F2F4F6] border border-dashed border-[#E5E8EB] rounded-3xl flex items-center justify-center text-[#B0B8C1] text-[10px] font-bold">ADVERTISEMENT</div>
-
-        {/* SEO Blog Content Section (New) */}
-        <section className="bg-white p-8 md:p-12 rounded-[40px] shadow-sm border border-[#F2F4F6] space-y-8">
+        {/* SEO & Blog Content */}
+        <section className="bg-white p-8 md:p-12 rounded-[40px] shadow-sm border border-[#F2F4F6] space-y-6">
           <h2 className="text-2xl font-bold">왜 QQQ와 SCHD를 함께 투자해야 할까요?</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-[#3182F6]">📈 QQQ의 강력한 성장성</h3>
-              <p className="text-sm text-[#4E5968] leading-relaxed">
-                나스닥100(QQQ)은 Apple, Microsoft, NVIDIA 등 기술 혁신을 주도하는 기업들에 집중합니다. 높은 자본 차익을 기대할 수 있지만, 시장 변동성에는 다소 취약한 모습을 보입니다.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-[#00D084]">☕ SCHD의 탄탄한 안정성</h3>
-              <p className="text-sm text-[#4E5968] leading-relaxed">
-                배당성장(SCHD)은 꾸준히 배당을 늘리는 가치주에 투자합니다. 상승장에서는 QQQ보다 속도가 느릴 수 있지만, 하락장에서의 방어력이 뛰어나고 매월 현금 흐름을 만들어줍니다.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-[#F9FAFB] p-6 rounded-[24px]">
-            <h3 className="text-md font-bold mb-3 italic">"하락장을 견디는 힘이 수익을 만듭니다."</h3>
-            <p className="text-sm text-[#4E5968] leading-relaxed">
-              두 ETF를 적절히 섞으면 기술주의 **폭발적인 수익**과 가치주의 **안정적인 배당**을 동시에 챙길 수 있습니다. 특히 2022년과 같은 하락장에서 MDD(최대 하락폭)를 획기적으로 낮추는 포트폴리오 다각화 효과를 얻을 수 있습니다.
-            </p>
-          </div>
+          <p className="text-sm text-[#4E5968] leading-relaxed">
+            나스닥100(QQQ)의 **혁신적인 성장**과 배당성장(SCHD)의 **탄탄한 현금 흐름**을 결합하는 것은 이미 많은 자산가들이 선택한 검증된 전략입니다. 이 포트폴리오의 핵심은 강세장에서는 수익률을 극대화하고, 2022년과 같은 약세장에서는 배당금을 통해 버틸 수 있는 '안전핀'을 확보하는 데 있습니다.
+          </p>
         </section>
 
-        {/* Holdings Comparison */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6]">
-            <h4 className="font-bold text-[#3182F6] mb-6 flex items-center gap-2">QQQ Top 10</h4>
-            <ul className="space-y-4">
-              {qqqHoldings.map((h, i) => (<li key={h} className="flex justify-between text-sm"><span className="text-[#8B95A1] font-bold">{i+1}</span><span className="font-medium text-[#4E5968]">{h}</span></li>))}
-            </ul>
+        {/* Visual Holdings with Logos */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-[#F2F4F6] space-y-6">
+            <h4 className="font-bold text-[#3182F6] flex items-center gap-2">
+              <img src="https://logo.clearbit.com/invesco.com" className="w-5 h-5 rounded-full" /> QQQ Top 10
+            </h4>
+            <div className="space-y-4">
+              {qqqHoldings.map((h) => (
+                <div key={h.name} className="flex items-center gap-3">
+                  <img src={`https://logo.clearbit.com/${h.name.toLowerCase().replace(" alphabet cl a", "google").replace("alphabet cl c", "google").split(' ')[0]}.com`} 
+                       onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${h.name}&background=F2F4F6&color=8B95A1`; }}
+                       className="w-8 h-8 rounded-xl object-contain bg-[#F9FAFB] p-1" />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-[#191F28]">{h.name}</p>
+                    <p className="text-[10px] text-[#8B95A1]">{h.symbol}</p>
+                  </div>
+                  <span className="text-xs font-bold text-[#3182F6]">{h.weight}%</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6]">
-            <h4 className="font-bold text-[#4E5968] mb-6 flex items-center gap-2">SCHD Top 10</h4>
-            <ul className="space-y-4">
-              {schdHoldings.map((h, i) => (<li key={h} className="flex justify-between text-sm"><span className="text-[#8B95A1] font-bold">{i+1}</span><span className="font-medium text-[#4E5968]">{h}</span></li>))}
-            </ul>
+
+          <div className="bg-white p-8 rounded-[40px] shadow-sm border border-[#F2F4F6] space-y-6">
+            <h4 className="font-bold text-[#4E5968] flex items-center gap-2">
+              <img src="https://logo.clearbit.com/schwab.com" className="w-5 h-5 rounded-full" /> SCHD Top 10
+            </h4>
+            <div className="space-y-4">
+              {schdHoldings.map((h) => (
+                <div key={h.name} className="flex items-center gap-3">
+                  <img src={`https://logo.clearbit.com/${h.name.toLowerCase().replace(" ", "").split(' ')[0]}.com`} 
+                       onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${h.name}&background=F2F4F6&color=8B95A1`; }}
+                       className="w-8 h-8 rounded-xl object-contain bg-[#F9FAFB] p-1" />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-[#191F28]">{h.name}</p>
+                    <p className="text-[10px] text-[#8B95A1]">{h.symbol}</p>
+                  </div>
+                  <span className="text-xs font-bold text-[#4E5968]">{h.weight}%</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
-
       </div>
 
       <style jsx global>{`
