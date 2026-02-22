@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const data = [
   { year: 2014, qqq: 19.18, schd: 15.82 },
@@ -25,6 +26,21 @@ const data = [
   { year: 2024, qqq: 22.11, schd: 18.90 },
   { year: 2025, qqq: 14.50, schd: 11.20 }
 ];
+
+// 간단한 숫자 애니메이션 컴포넌트
+const AnimatedNumber = ({ value, suffix = "" }: { value: string | number, suffix?: string }) => {
+  return (
+    <motion.span
+      key={value}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="inline-block"
+    >
+      {value}{suffix}
+    </motion.span>
+  );
+};
 
 export default function PortfolioCalculator() {
   const [qqqWeight, setQqqWeight] = useState(50);
@@ -57,128 +73,204 @@ export default function PortfolioCalculator() {
 
     const years = data.length;
     const cagr = (Math.pow(currentBalance / 100, 1 / years) - 1) * 100;
+    
+    // 평균 배당률 (대략적인 값: QQQ 0.6%, SCHD 3.4%)
+    const dividendYield = (qqqWeight / 100) * 0.6 + (schdWeight / 100) * 3.4;
 
     return {
       chartData,
       cagr: cagr.toFixed(2),
       mdd: (maxDrawdown * 100).toFixed(2),
-      finalValue: currentBalance.toFixed(1)
+      finalValue: currentBalance.toFixed(1),
+      dividendYield: dividendYield.toFixed(2)
     };
   }, [qqqWeight, schdWeight]);
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4 md:p-8 text-slate-900">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">QQQ & SCHD 포트폴리오 계산기</h1>
-          <p className="text-slate-500">2014년 - 2025년 백테스트 데이터 기반</p>
-        </div>
+    <main className="min-h-screen bg-[#F9FAFB] p-4 md:p-10 font-sans text-[#191F28]">
+      <div className="max-w-3xl mx-auto space-y-10">
+        
+        {/* Header - Minimalist */}
+        <header className="space-y-2 py-4">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-2xl md:text-3xl font-bold tracking-tight text-center"
+          >
+            투자 비중 계산기
+          </motion.h1>
+          <p className="text-[#8B95A1] text-center text-sm font-medium">
+            QQQ와 SCHD, 나에게 맞는 황금 비율 찾기
+          </p>
+        </header>
 
-        {/* Controls & Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center">
-            <div className="flex justify-between mb-4">
-              <span className="font-semibold text-blue-600 text-lg">QQQ: {qqqWeight}%</span>
-              <span className="font-semibold text-orange-500 text-lg">SCHD: {schdWeight}%</span>
+        {/* Slider Section - Large & Interactive */}
+        <section className="bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-8">
+          <div className="flex justify-between items-end mb-4">
+            <div className="space-y-1">
+              <span className="text-[#8B95A1] text-xs font-semibold uppercase tracking-wider">나스닥100</span>
+              <p className="text-2xl font-bold text-[#3182F6]">QQQ {qqqWeight}%</p>
             </div>
+            <div className="space-y-1 text-right">
+              <span className="text-[#8B95A1] text-xs font-semibold uppercase tracking-wider">배당성장</span>
+              <p className="text-2xl font-bold text-[#4E5968]">SCHD {schdWeight}%</p>
+            </div>
+          </div>
+
+          <div className="relative pt-6 pb-2">
             <input
               type="range"
               min="0"
               max="100"
+              step="5"
               value={qqqWeight}
               onChange={(e) => setQqqWeight(parseInt(e.target.value))}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              className="w-full h-3 bg-[#E5E8EB] rounded-full appearance-none cursor-pointer accent-[#3182F6] hover:accent-[#1B64DA] transition-all"
+              style={{
+                WebkitAppearance: 'none',
+              }}
             />
-            <div className="flex justify-between mt-2 text-xs text-slate-400">
-              <span>SCHD 100%</span>
-              <span>50:50</span>
-              <span>QQQ 100%</span>
+            <div className="flex justify-between mt-6 px-1">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xs font-bold text-[#4E5968]">안정형</span>
+                <span className="text-[10px] text-[#ADB5BD]">SCHD 100%</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xs font-bold text-[#3182F6]">공격형</span>
+                <span className="text-[10px] text-[#ADB5BD]">QQQ 100%</span>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div className="space-y-4">
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <p className="text-sm text-slate-500">연평균 수익률 (CAGR)</p>
-              <p className="text-2xl font-bold text-blue-600">{results.cagr}%</p>
+        {/* Metrics Section - Toss Style Cards */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="bg-white p-6 rounded-[24px] shadow-sm border border-[#F2F4F6] text-center space-y-2"
+          >
+            <span className="text-xs font-semibold text-[#8B95A1]">연평균 수익률</span>
+            <div className="text-2xl font-bold text-[#3182F6]">
+              <AnimatedNumber value={results.cagr} suffix="%" />
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <p className="text-sm text-slate-500">최대 하락폭 (MDD)</p>
-              <p className="text-2xl font-bold text-red-500">{results.mdd}%</p>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="bg-white p-6 rounded-[24px] shadow-sm border border-[#F2F4F6] text-center space-y-2"
+          >
+            <span className="text-xs font-semibold text-[#8B95A1]">최대 하락폭</span>
+            <div className="text-2xl font-bold text-[#FF4D4F]">
+              <AnimatedNumber value={results.mdd} suffix="%" />
             </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <p className="text-sm text-slate-500">최종 자산 (100 기준)</p>
-              <p className="text-2xl font-bold">{results.finalValue}</p>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="bg-white p-6 rounded-[24px] shadow-sm border border-[#F2F4F6] text-center space-y-2"
+          >
+            <span className="text-xs font-semibold text-[#8B95A1]">예상 배당률</span>
+            <div className="text-2xl font-bold text-[#00D084]">
+              <AnimatedNumber value={results.dividendYield} suffix="%" />
             </div>
-          </div>
+          </motion.div>
+        </section>
+
+        {/* AdSense Placeholder */}
+        <div className="w-full max-w-[640px] h-[100px] mx-auto bg-white border border-dashed border-[#E5E8EB] rounded-2xl flex items-center justify-center text-[#ADB5BD] text-xs overflow-hidden">
+          <p>ADVERTISEMENT (640x100)</p>
         </div>
 
-        {/* Chart */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <h2 className="text-lg font-semibold mb-6">누적 수익률 추이 (2014-2025)</h2>
-          <div className="h-[400px] w-full">
+        {/* Chart Section - High Fidelity */}
+        <section className="bg-white p-6 md:p-10 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-[#F2F4F6]">
+          <h2 className="text-lg font-bold mb-8 flex items-center gap-2">
+            누적 수익률 추이
+            <span className="text-[10px] font-normal text-[#8B95A1]">(2014-2025)</span>
+          </h2>
+          <div className="h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={results.chartData}>
+              <AreaChart data={results.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#3182F6" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#3182F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="0" vertical={false} stroke="#F2F4F6" />
                 <XAxis 
                   dataKey="year" 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 12 }}
-                  dy={10}
+                  tick={{ fill: '#8B95A1', fontSize: 11, fontWeight: 500 }}
+                  dy={15}
                 />
                 <YAxis 
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 12 }}
-                  dx={-10}
+                  tick={{ fill: '#8B95A1', fontSize: 11, fontWeight: 500 }}
                 />
                 <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                  cursor={{ stroke: '#3182F6', strokeWidth: 1 }}
+                  contentStyle={{ 
+                    borderRadius: '16px', 
+                    border: 'none', 
+                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                    padding: '12px'
+                  }}
+                  itemStyle={{ color: '#3182F6', fontWeight: 'bold' }}
+                  labelStyle={{ fontWeight: 'bold', color: '#191F28', marginBottom: '4px' }}
+                  formatter={(value) => [`${value}p`, '자산 지수']}
                 />
                 <Area 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#2563eb" 
-                  strokeWidth={3}
+                  stroke="#3182F6" 
+                  strokeWidth={4}
                   fillOpacity={1} 
                   fill="url(#colorValue)" 
-                  animationDuration={500}
+                  animationDuration={1000}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
-        
-        {/* Data Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="p-4 text-sm font-semibold text-slate-600 border-b">연도</th>
-                <th className="p-4 text-sm font-semibold text-slate-600 border-b text-right">QQQ 수익률</th>
-                <th className="p-4 text-sm font-semibold text-slate-600 border-b text-right">SCHD 수익률</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item) => (
-                <tr key={item.year} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 text-sm border-b font-medium">{item.year}</td>
-                  <td className="p-4 text-sm border-b text-right text-blue-600">{item.qqq}%</td>
-                  <td className="p-4 text-sm border-b text-right text-orange-500">{item.schd}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        </section>
+
+        {/* Footer info */}
+        <footer className="text-center py-10 space-y-4">
+          <p className="text-[11px] text-[#B0B8C1] leading-relaxed">
+            위 결과는 과거의 데이터를 기반으로 한 백테스트 결과이며,<br />
+            미래의 수익을 보장하지 않습니다. 투자 결정은 본인의 책임입니다.
+          </p>
+        </footer>
       </div>
+
+      <style jsx global>{`
+        /* Custom Slider Thumb for Mobile-First Experience */
+        input[type='range']::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 28px;
+          height: 28px;
+          background: #ffffff;
+          border: 4px solid #3182F6;
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          transition: all 0.2s ease;
+        }
+        input[type='range']::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+        }
+        input[type='range']::-moz-range-thumb {
+          width: 24px;
+          height: 24px;
+          background: #ffffff;
+          border: 4px solid #3182F6;
+          border-radius: 50%;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+      `}</style>
     </main>
   );
 }
