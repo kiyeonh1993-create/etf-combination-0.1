@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   AreaChart,
   Area,
@@ -27,14 +27,22 @@ const data = [
   { year: 2025, qqq: 14.50, schd: 11.20 }
 ];
 
-// 간단한 숫자 애니메이션 컴포넌트
+const qqqHoldings = [
+  "Apple", "Microsoft", "Amazon", "NVIDIA", "Alphabet Cl A", 
+  "Meta", "Broadcom", "Tesla", "Costco", "Alphabet Cl C"
+];
+
+const schdHoldings = [
+  "AbbVie", "Home Depot", "Chevron", "Amgen", "Verizon", 
+  "PepsiCo", "Pfizer", "Cisco", "Coca-Cola", "Texas Instruments"
+];
+
 const AnimatedNumber = ({ value, suffix = "" }: { value: string | number, suffix?: string }) => {
   return (
     <motion.span
       key={value}
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
       className="inline-block"
     >
       {value}{suffix}
@@ -43,7 +51,7 @@ const AnimatedNumber = ({ value, suffix = "" }: { value: string | number, suffix
 };
 
 export default function PortfolioCalculator() {
-  const [qqqWeight, setQqqWeight] = useState(50);
+  const [qqqWeight, setQqqWeight] = useState(70);
   const schdWeight = 100 - qqqWeight;
 
   const results = useMemo(() => {
@@ -55,220 +63,210 @@ export default function PortfolioCalculator() {
     data.forEach((item) => {
       const yearlyReturn = (qqqWeight / 100) * (item.qqq / 100) + (schdWeight / 100) * (item.schd / 100);
       currentBalance *= (1 + yearlyReturn);
-      
-      if (currentBalance > peakBalance) {
-        peakBalance = currentBalance;
-      }
-      
+      if (currentBalance > peakBalance) peakBalance = currentBalance;
       const drawdown = (currentBalance - peakBalance) / peakBalance;
-      if (drawdown < maxDrawdown) {
-        maxDrawdown = drawdown;
-      }
-
-      chartData.push({
-        year: item.year,
-        value: Math.round(currentBalance * 10) / 10
-      });
+      if (drawdown < maxDrawdown) maxDrawdown = drawdown;
+      chartData.push({ year: item.year, value: Math.round(currentBalance * 10) / 10 });
     });
 
     const years = data.length;
     const cagr = (Math.pow(currentBalance / 100, 1 / years) - 1) * 100;
-    
-    // 평균 배당률 (대략적인 값: QQQ 0.6%, SCHD 3.4%)
     const dividendYield = (qqqWeight / 100) * 0.6 + (schdWeight / 100) * 3.4;
 
-    return {
-      chartData,
-      cagr: cagr.toFixed(2),
-      mdd: (maxDrawdown * 100).toFixed(2),
-      finalValue: currentBalance.toFixed(1),
-      dividendYield: dividendYield.toFixed(2)
-    };
+    // 100% QQQ 기준 MDD (-32.58%)와 비교
+    const mddImprovement = (Math.abs(-32.58) - Math.abs(maxDrawdown * 100)).toFixed(1);
+
+    // 성향 진단 로직
+    let profile = { title: "", icon: "⚖️", desc: "", color: "#4E5968" };
+    if (qqqWeight >= 80) {
+      profile = { title: "초공격적 성장형", icon: "🚀", desc: "자산 폭발! 하락장 멘탈이 강한 젊은 투자자에게 추천해요.", color: "#3182F6" };
+    } else if (qqqWeight >= 60) {
+      profile = { title: "공격적 밸런스형", icon: "📈", desc: "시장을 이기면서도 하락장 방어력을 챙긴 가장 영리한 비율이에요.", color: "#3182F6" };
+    } else if (qqqWeight >= 40) {
+      profile = { title: "중립적 밸런스형", icon: "⚖️", desc: "수익과 배당, 두 마리 토끼를 잡고 싶은 분들의 황금 비율입니다.", color: "#4E5968" };
+    } else {
+      profile = { title: "안정적 배당형", icon: "☕", desc: "잠 편하게 자고 싶은 배당러! 하락장에서도 마음이 편안해요.", color: "#00D084" };
+    }
+
+    return { chartData, cagr: cagr.toFixed(2), mdd: (maxDrawdown * 100).toFixed(2), dividendYield: dividendYield.toFixed(2), profile, mddImprovement };
   }, [qqqWeight, schdWeight]);
 
   return (
     <main className="min-h-screen bg-[#F9FAFB] p-4 md:p-10 font-sans text-[#191F28]">
-      <div className="max-w-3xl mx-auto space-y-10">
+      <div className="max-w-3xl mx-auto space-y-8">
         
-        {/* Header - Minimalist */}
-        <header className="space-y-2 py-4">
-          <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-2xl md:text-3xl font-bold tracking-tight text-center"
-          >
-            투자 비중 계산기
-          </motion.h1>
-          <p className="text-[#8B95A1] text-center text-sm font-medium">
-            QQQ와 SCHD, 나에게 맞는 황금 비율 찾기
-          </p>
+        {/* Header */}
+        <header className="space-y-2 py-4 text-center">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <span className="inline-block px-3 py-1 bg-[#3182F61A] text-[#3182F6] text-xs font-bold rounded-full mb-2">Portfolio Guide</span>
+            <h1 className="text-3xl font-bold tracking-tight">황금 비율 찾기</h1>
+          </motion.div>
         </header>
 
-        {/* Slider Section - Large & Interactive */}
-        <section className="bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-8">
-          <div className="flex justify-between items-end mb-4">
+        {/* Dynamic Insight Card (Toss Style Focus) */}
+        <section className="bg-white p-8 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#F2F4F6]">
+          <div className="flex items-start gap-4 mb-6">
+            <span className="text-4xl">{results.profile.icon}</span>
             <div className="space-y-1">
-              <span className="text-[#8B95A1] text-xs font-semibold uppercase tracking-wider">나스닥100</span>
-              <p className="text-2xl font-bold text-[#3182F6]">QQQ {qqqWeight}%</p>
-            </div>
-            <div className="space-y-1 text-right">
-              <span className="text-[#8B95A1] text-xs font-semibold uppercase tracking-wider">배당성장</span>
-              <p className="text-2xl font-bold text-[#4E5968]">SCHD {schdWeight}%</p>
+              <h2 className="text-xl font-bold" style={{ color: results.profile.color }}>{results.profile.title}</h2>
+              <p className="text-[#4E5968] text-sm leading-relaxed">{results.profile.desc}</p>
             </div>
           </div>
+          
+          <div className="pt-4 border-t border-[#F2F4F6] flex items-center justify-between text-sm">
+            <span className="text-[#8B95A1]">시장 대비 장점</span>
+            <span className="font-bold text-[#3182F6]">
+              {parseFloat(results.mddImprovement) > 0 
+                ? `100% QQQ보다 하락폭을 ${results.mddImprovement}% 줄였어요!` 
+                : "최고의 공격력을 가진 구성이에요!"}
+            </span>
+          </div>
+        </section>
 
-          <div className="relative pt-6 pb-2">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={qqqWeight}
-              onChange={(e) => setQqqWeight(parseInt(e.target.value))}
-              className="w-full h-3 bg-[#E5E8EB] rounded-full appearance-none cursor-pointer accent-[#3182F6] hover:accent-[#1B64DA] transition-all"
-              style={{
-                WebkitAppearance: 'none',
-              }}
-            />
-            <div className="flex justify-between mt-6 px-1">
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-xs font-bold text-[#4E5968]">안정형</span>
-                <span className="text-[10px] text-[#ADB5BD]">SCHD 100%</span>
+        {/* Controls - Presets & Slider */}
+        <section className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6] space-y-10">
+          <div className="flex gap-2 mb-2">
+            {[
+              { label: "공격 8:2", val: 80 },
+              { label: "밸런스 5:5", val: 50 },
+              { label: "안정 2:8", val: 20 }
+            ].map((btn) => (
+              <button 
+                key={btn.val}
+                onClick={() => setQqqWeight(btn.val)}
+                className={`flex-1 py-3 text-xs font-bold rounded-xl transition-all ${qqqWeight === btn.val ? 'bg-[#3182F6] text-white shadow-md' : 'bg-[#F2F4F6] text-[#4E5968] hover:bg-[#E5E8EB]'}`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex justify-between items-end">
+              <div className="space-y-1">
+                <span className="text-[#8B95A1] text-[10px] font-bold uppercase">Tech Growth</span>
+                <p className="text-3xl font-black text-[#3182F6]">QQQ {qqqWeight}%</p>
               </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-xs font-bold text-[#3182F6]">공격형</span>
-                <span className="text-[10px] text-[#ADB5BD]">QQQ 100%</span>
+              <div className="space-y-1 text-right">
+                <span className="text-[#8B95A1] text-[10px] font-bold uppercase">Dividend Plus</span>
+                <p className="text-3xl font-black text-[#4E5968]">SCHD {schdWeight}%</p>
+              </div>
+            </div>
+
+            <div className="relative py-4">
+              {/* Highlight Safety Zone */}
+              <div className="absolute top-1/2 left-[50%] right-[20%] h-3 bg-[#3182F622] -translate-y-1/2 rounded-full pointer-events-none" />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={qqqWeight}
+                onChange={(e) => setQqqWeight(parseInt(e.target.value))}
+                className="w-full h-3 bg-[#E5E8EB] rounded-full appearance-none cursor-pointer accent-[#3182F6] relative z-10"
+              />
+              <div className="flex justify-between mt-4 text-[10px] font-bold text-[#ADB5BD]">
+                <span>배당 극대화</span>
+                <span className="text-[#3182F6]">추천 구간 (60~80%)</span>
+                <span>성장 극대화</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Metrics Section - Toss Style Cards */}
+        {/* Metrics Grid */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <motion.div 
-            whileHover={{ y: -5 }}
-            className="bg-white p-6 rounded-[24px] shadow-sm border border-[#F2F4F6] text-center space-y-2"
-          >
-            <span className="text-xs font-semibold text-[#8B95A1]">연평균 수익률</span>
-            <div className="text-2xl font-bold text-[#3182F6]">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center space-y-1">
+            <span className="text-xs font-bold text-[#8B95A1]">연평균 수익률</span>
+            <div className="text-2xl font-black text-[#3182F6] tracking-tight">
               <AnimatedNumber value={results.cagr} suffix="%" />
             </div>
-          </motion.div>
-
-          <motion.div 
-            whileHover={{ y: -5 }}
-            className="bg-white p-6 rounded-[24px] shadow-sm border border-[#F2F4F6] text-center space-y-2"
-          >
-            <span className="text-xs font-semibold text-[#8B95A1]">최대 하락폭</span>
-            <div className="text-2xl font-bold text-[#FF4D4F]">
+          </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center space-y-1">
+            <span className="text-xs font-bold text-[#8B95A1]">최대 하락폭</span>
+            <div className="text-2xl font-black text-[#FF4D4F] tracking-tight">
               <AnimatedNumber value={results.mdd} suffix="%" />
             </div>
-          </motion.div>
-
-          <motion.div 
-            whileHover={{ y: -5 }}
-            className="bg-white p-6 rounded-[24px] shadow-sm border border-[#F2F4F6] text-center space-y-2"
-          >
-            <span className="text-xs font-semibold text-[#8B95A1]">예상 배당률</span>
-            <div className="text-2xl font-bold text-[#00D084]">
+          </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F2F4F6] text-center space-y-1">
+            <span className="text-xs font-bold text-[#8B95A1]">예상 배당률</span>
+            <div className="text-2xl font-black text-[#00D084] tracking-tight">
               <AnimatedNumber value={results.dividendYield} suffix="%" />
             </div>
-          </motion.div>
+          </div>
         </section>
 
         {/* AdSense Placeholder */}
-        <div className="w-full max-w-[640px] h-[100px] mx-auto bg-white border border-dashed border-[#E5E8EB] rounded-2xl flex items-center justify-center text-[#ADB5BD] text-xs overflow-hidden">
-          <p>ADVERTISEMENT (640x100)</p>
+        <div className="w-full max-w-[640px] h-[100px] mx-auto bg-[#F2F4F6] border border-dashed border-[#E5E8EB] rounded-3xl flex items-center justify-center text-[#B0B8C1] text-[10px] font-bold">
+          ADVERTISEMENT (640x100)
         </div>
 
-        {/* Chart Section - High Fidelity */}
-        <section className="bg-white p-6 md:p-10 rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-[#F2F4F6]">
-          <h2 className="text-lg font-bold mb-8 flex items-center gap-2">
-            누적 수익률 추이
-            <span className="text-[10px] font-normal text-[#8B95A1]">(2014-2025)</span>
-          </h2>
-          <div className="h-[320px] w-full">
+        {/* Chart */}
+        <section className="bg-white p-8 rounded-[40px] shadow-sm border border-[#F2F4F6]">
+          <h3 className="text-lg font-bold mb-8">내 자산의 성장 궤적</h3>
+          <div className="h-[280px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={results.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={results.chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3182F6" stopOpacity={0.15}/>
+                    <stop offset="5%" stopColor="#3182F6" stopOpacity={0.2}/>
                     <stop offset="95%" stopColor="#3182F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="0" vertical={false} stroke="#F2F4F6" />
-                <XAxis 
-                  dataKey="year" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#8B95A1', fontSize: 11, fontWeight: 500 }}
-                  dy={15}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#8B95A1', fontSize: 11, fontWeight: 500 }}
-                />
+                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#ADB5BD', fontSize: 11 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#ADB5BD', fontSize: 11 }} />
                 <Tooltip 
-                  cursor={{ stroke: '#3182F6', strokeWidth: 1 }}
-                  contentStyle={{ 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    padding: '12px'
-                  }}
-                  itemStyle={{ color: '#3182F6', fontWeight: 'bold' }}
-                  labelStyle={{ fontWeight: 'bold', color: '#191F28', marginBottom: '4px' }}
-                  formatter={(value) => [`${value}p`, '자산 지수']}
+                  cursor={{ stroke: '#3182F6', strokeWidth: 1.5 }}
+                  contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 15px 30px rgba(0,0,0,0.08)', padding: '16px' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#3182F6" 
-                  strokeWidth={4}
-                  fillOpacity={1} 
-                  fill="url(#colorValue)" 
-                  animationDuration={1000}
-                />
+                <Area type="monotone" dataKey="value" stroke="#3182F6" strokeWidth={5} fill="url(#colorValue)" animationDuration={1000} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </section>
 
-        {/* Footer info */}
-        <footer className="text-center py-10 space-y-4">
-          <p className="text-[11px] text-[#B0B8C1] leading-relaxed">
-            위 결과는 과거의 데이터를 기반으로 한 백테스트 결과이며,<br />
-            미래의 수익을 보장하지 않습니다. 투자 결정은 본인의 책임입니다.
-          </p>
-        </footer>
+        {/* Holdings Comparison (New) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
+          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6]">
+            <h4 className="font-bold text-[#3182F6] mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#3182F6] rounded-full" /> QQQ Top 10
+            </h4>
+            <ul className="space-y-4">
+              {qqqHoldings.map((h, i) => (
+                <li key={h} className="flex items-center justify-between text-sm">
+                  <span className="text-[#8B95A1] font-bold">{i+1}</span>
+                  <span className="font-medium text-[#4E5968] flex-1 ml-4">{h}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-[#F2F4F6]">
+            <h4 className="font-bold text-[#4E5968] mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#4E5968] rounded-full" /> SCHD Top 10
+            </h4>
+            <ul className="space-y-4">
+              {schdHoldings.map((h, i) => (
+                <li key={h} className="flex items-center justify-between text-sm">
+                  <span className="text-[#8B95A1] font-bold">{i+1}</span>
+                  <span className="font-medium text-[#4E5968] flex-1 ml-4">{h}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
       </div>
 
       <style jsx global>{`
-        /* Custom Slider Thumb for Mobile-First Experience */
         input[type='range']::-webkit-slider-thumb {
           -webkit-appearance: none;
-          appearance: none;
-          width: 28px;
-          height: 28px;
+          width: 32px;
+          height: 32px;
           background: #ffffff;
-          border: 4px solid #3182F6;
+          border: 6px solid #3182F6;
           border-radius: 50%;
+          box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
           cursor: pointer;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-          transition: all 0.2s ease;
-        }
-        input[type='range']::-webkit-slider-thumb:hover {
-          transform: scale(1.1);
-        }
-        input[type='range']::-moz-range-thumb {
-          width: 24px;
-          height: 24px;
-          background: #ffffff;
-          border: 4px solid #3182F6;
-          border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
       `}</style>
     </main>
